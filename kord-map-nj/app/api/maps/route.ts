@@ -72,6 +72,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         const blob = await put(blobPath, JSON.stringify(payload, null, 2), {
             access: 'private',
             contentType: 'application/json',
+            allowOverwrite: true,
         });
 
         return NextResponse.json({ ok: true, url: blob.url });
