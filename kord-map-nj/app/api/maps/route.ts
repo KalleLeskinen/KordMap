@@ -3,30 +3,17 @@ import path from 'path';
 import { get, list, put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 
-export const revalidate = 30;
-
 const getMapFilePath = (map: string, kind: string) => {
-    if (kind === 'mapdata') return path.join(process.cwd(), 'public', 'maps', map, 'mapdata.json');
-    if (kind === 'images') return path.join(process.cwd(), 'public', 'maps', map, 'images.json');
-    return path.join(process.cwd(), 'public', 'maps', map, `${map}-points.json`);
+    const fileName = kind === 'mapdata' ? 'mapdata.json' : `${map}-points.json`;
+    return path.join(process.cwd(), 'public', 'maps', map, fileName);
 };
 
 const isAuthorized = (pass: string | null) => pass === process.env.EDITOR_PASSWORD;
 
 async function readPublicMapData(map: string, kind: string) {
     const filePath = getMapFilePath(map, kind);
-
-    try {
-        const raw = await fs.readFile(filePath, 'utf8');
-        return JSON.parse(raw);
-    } catch (error: unknown) {
-        if (typeof error === 'object' && error !== null && 'code' in error && (error as { code?: string }).code === 'ENOENT') {
-            if (kind === 'images') return { images: {} };
-            if (kind === 'points') return { points: [] };
-            if (kind === 'mapdata') return { floors: ['0', '1'], icons: [], mapScale: [1, 7] };
-        }
-        throw error;
-    }
+    const raw = await fs.readFile(filePath, 'utf8');
+    return JSON.parse(raw);
 }
 
 async function readPersistedMapData(map: string, kind: string) {

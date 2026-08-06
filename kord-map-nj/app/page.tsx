@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import Sidebar from '@/components/Sidebar';
 import MapViewer from '@/components/MapViewer';
 import CreatePointModal from '@/components/CreatePointModal';
@@ -8,7 +8,7 @@ import AuthModal from '@/components/AuthModal';
 import MapSettingsModal from '@/components/MapSettingsModal';
 import { PointData, MapScaleValue } from '@/types';
 
-const persistMapData = async (map: string, kind: 'mapdata' | 'points' | 'images', payload: unknown, pass: string) => {
+const persistMapData = async (map: string, kind: 'mapdata' | 'points', payload: unknown, pass: string) => {
     const response = await fetch(`/api/maps?map=${encodeURIComponent(map)}&kind=${kind}&pass=${encodeURIComponent(pass)}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -36,29 +36,6 @@ const normalizeMapScale = (value: MapScaleValue | null | undefined) => {
     };
 };
 
-const normalizeLoadedPointImages = (points: PointData[], loadedImages: Record<string, string> = {}) => {
-    const nextImages = { ...loadedImages };
-    const nextPoints = points.map((point) => {
-        const resolvedImageId = point.imageId ?? (point.image ? point.id : null) ?? (point.image ? `img-${point.id}` : null);
-
-        if (point.image && resolvedImageId) {
-            nextImages[resolvedImageId] = point.image;
-        }
-
-        const resolvedImage = point.image
-            ? point.image
-            : (resolvedImageId ? nextImages[resolvedImageId] ?? null : null);
-
-        return {
-            ...point,
-            imageId: resolvedImageId,
-            image: resolvedImage ?? null
-        };
-    });
-
-    return { points: nextPoints, images: nextImages };
-};
-
 export default function App() {
     const [isSelectingMap, setIsSelectingMap] = useState(true);
     const [currentMap, setCurrentMap] = useState('');
@@ -79,7 +56,6 @@ export default function App() {
     
     // Point Data State
     const [points, setPoints] = useState<PointData[]>([]);
-    const [images, setImages] = useState<Record<string, string>>({});
     
     // Modal & Tooltip State
     const [createModalOpen, setCreateModalOpen] = useState(false);
@@ -87,49 +63,6 @@ export default function App() {
     const [viewedPoint, setViewedPoint] = useState<PointData | null>(null);
     const [viewedPosition, setViewedPosition] = useState<{x: number, y: number} | null>(null);
     const [editingPoint, setEditingPoint] = useState<PointData | null>(null);
-    const initialLoadRef = useRef(true);
-    const pointsSaveTimeoutRef = useRef<number | null>(null);
-
-    const saveMapSettings = async (newFloors: string[], newIcons: string[], newMapScale: number, newZoomStartDistance: number) => {
-        if (!editorPassword || !currentMap) return;
-
-        try {
-            const mapDataPayload = {
-                floors: newFloors,
-                icons: newIcons,
-                mapScale: [newMapScale, newZoomStartDistance]
-            };
-
-            await persistMapData(currentMap, 'mapdata', mapDataPayload, editorPassword);
-        } catch (err) {
-            console.error('Failed to save map settings', err);
-            alert('Map settings could not be saved to storage.');
-        }
-    };
-
-    const savePoints = async (nextPoints: PointData[]) => {
-        if (!editorPassword || !currentMap) return;
-
-        try {
-            const pointsForSave = nextPoints.map(({ image, ...rest }) => ({
-                ...rest,
-                imageId: rest.imageId ?? (image ? rest.id : null)
-            }));
-
-            const nextImages: Record<string, string> = Object.fromEntries(
-                nextPoints
-                    .filter((point) => point.image && (point.imageId || point.id))
-                    .map((point) => [(point.imageId ?? point.id), point.image as string])
-            );
-
-            await persistMapData(currentMap, 'points', { points: pointsForSave }, editorPassword);
-            await persistMapData(currentMap, 'images', { images: nextImages }, editorPassword);
-            setImages(nextImages);
-        } catch (err) {
-            console.error('Failed to save map points', err);
-            alert('Map points could not be saved to storage.');
-        }
-    };
 
     // Initial Load
     useEffect(() => {
@@ -151,51 +84,20 @@ export default function App() {
                     setActiveFilters(new Set(icons));
                 }
 
-                const imagesRes = await fetch(`/api/maps?map=${encodeURIComponent(currentMap)}&kind=images`);
-                let loadedImages: Record<string, string> = {};
-                if (imagesRes.ok) {
-                    const parsedImages = await imagesRes.json();
-                    loadedImages = parsedImages.images || {};
-                }
-
                 const pointsRes = await fetch(`/api/maps?map=${encodeURIComponent(currentMap)}&kind=points`);
                 if (pointsRes.ok) {
                     const parsedPoints = await pointsRes.json();
-                    const { points: normalizedPoints, images: normalizedImages } = normalizeLoadedPointImages(parsedPoints.points || [], loadedImages);
-                    setPoints(normalizedPoints);
-                    setImages(normalizedImages);
+                    if (parsedPoints.points) setPoints(parsedPoints.points);
+                    else setPoints([]);
                 } else {
                     setPoints([]);
-                    setImages({});
                 }
-                initialLoadRef.current = false;
             } catch (err) {
                 console.error("Error loading map data", err);
-                initialLoadRef.current = false;
             }
         };
         loadMapData();
     }, [currentMap]);
-
-    useEffect(() => {
-        if (initialLoadRef.current || !editorPassword || !currentMap) return;
-
-        if (pointsSaveTimeoutRef.current !== null) {
-            window.clearTimeout(pointsSaveTimeoutRef.current);
-        }
-
-        pointsSaveTimeoutRef.current = window.setTimeout(() => {
-            void savePoints(points);
-            pointsSaveTimeoutRef.current = null;
-        }, 400);
-
-        return () => {
-            if (pointsSaveTimeoutRef.current !== null) {
-                window.clearTimeout(pointsSaveTimeoutRef.current);
-                pointsSaveTimeoutRef.current = null;
-            }
-        };
-    }, [points, editorPassword, currentMap]);
 
     // Auth Handlers
     const handleLogin = async (pass: string) => {
@@ -243,6 +145,34 @@ export default function App() {
         URL.revokeObjectURL(url);
     };
 
+    const saveMapSettings = async (newFloors: string[], newIcons: string[], newMapScale: number, newZoomStartDistance: number) => {
+        if (!editorPassword || !currentMap) return;
+
+        try {
+            const mapDataPayload = {
+                floors: newFloors,
+                icons: newIcons,
+                mapScale: [newMapScale, newZoomStartDistance]
+            };
+
+            await persistMapData(currentMap, 'mapdata', mapDataPayload, editorPassword);
+        } catch (err) {
+            console.error('Failed to save map settings', err);
+            alert('Map settings could not be saved to storage.');
+        }
+    };
+
+    const savePoints = async (nextPoints: PointData[]) => {
+        if (!editorPassword || !currentMap) return;
+
+        try {
+            await persistMapData(currentMap, 'points', { points: nextPoints }, editorPassword);
+        } catch (err) {
+            console.error('Failed to save map points', err);
+            alert('Map points could not be saved to storage.');
+        }
+    };
+
     const handleLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -253,9 +183,7 @@ export default function App() {
                 if (parsed.map && parsed.map !== currentMap) {
                     if (!confirm(`Warning: document data is tagged for '${parsed.map}', but current Map is '${currentMap}'. Load anyway?`)) return;
                 }
-                const { points: normalizedPoints, images: normalizedImages } = normalizeLoadedPointImages(parsed.points || []);
-                setPoints(normalizedPoints);
-                setImages(normalizedImages);
+                setPoints(parsed.points || []);
                 if (parsed.mapScale) {
                     const parsedScale = normalizeMapScale(parsed.mapScale);
                     setMapScale(parsedScale.multiplier);
@@ -338,7 +266,11 @@ export default function App() {
                 }}
                 onPointMove={(id, x, y) => {
                     if (!!editorPassword) {
-                        setPoints(prev => prev.map(p => p.id === id ? { ...p, x, y } : p));
+                        setPoints(prev => {
+                            const nextPoints = prev.map(p => p.id === id ? { ...p, x, y } : p);
+                            void savePoints(nextPoints);
+                            return nextPoints;
+                        });
                     }
                 }}
             />
@@ -360,9 +292,7 @@ export default function App() {
                         : [...points, newPoint];
 
                     setPoints(nextPoints);
-                    if (editorPassword && currentMap) {
-                        void savePoints(nextPoints);
-                    }
+                    void savePoints(nextPoints);
                     setCreateModalOpen(false);
                     setEditingPoint(null);
                 }}

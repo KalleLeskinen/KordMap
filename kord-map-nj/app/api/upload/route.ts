@@ -6,6 +6,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     const filename = searchParams.get('filename');
     const pass = searchParams.get('pass');
 
+    // Reject the upload if the password doesn't match the environment variable
     if (pass !== process.env.EDITOR_PASSWORD) {
         return NextResponse.json({ error: 'Unauthorized upload attempt' }, { status: 401 });
     }
@@ -15,15 +16,12 @@ export async function POST(request: Request): Promise<NextResponse> {
     }
 
     try {
-        const contentType = request.headers.get('content-type') ?? 'application/octet-stream';
-        const fileBlob = await request.blob();
-        const blob = await put(filename, fileBlob, {
+        const blob = await put(filename, request.body as ReadableStream, {
             access: 'public',
-            contentType,
         });
         return NextResponse.json(blob);
     } catch (error) {
-        console.error('Upload failed', error);
+        console.error("Upload failed", error);
         return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
     }
 }

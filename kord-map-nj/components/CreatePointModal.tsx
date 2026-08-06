@@ -69,21 +69,20 @@ export default function CreatePointModal({ isOpen, pendingCoords, activeFloor, a
     };
 
     const handleSave = async () => {
+        // If editing, preserve the old image URL unless they attached a new file
         let imageUrl = editPoint ? editPoint.image : null;
-        let imageId = editPoint?.imageId ?? (editPoint?.image ? editPoint.id : null);
 
         if (imageFile) {
             setIsUploading(true);
             try {
                 const response = await fetch(`/api/upload?filename=${Date.now()}-${imageFile.name}&pass=${encodeURIComponent(editorPassword)}`, {
-                    method: 'POST',
-                    body: imageFile,
+                method: 'POST',
+                body: imageFile,
                 });
                 
                 if (response.ok) {
                     const blob = await response.json();
-                    imageUrl = blob.url;
-                    imageId = `img-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+                    imageUrl = blob.url; 
                 } else {
                     console.error('Failed to upload image');
                 }
@@ -95,14 +94,14 @@ export default function CreatePointModal({ isOpen, pendingCoords, activeFloor, a
         }
 
         onSave({
+            // If editing, preserve the ID and original floor, otherwise create new
             id: editPoint ? editPoint.id : Date.now().toString(),
             floor: editPoint ? editPoint.floor : (activeFloor === 'floor-0' ? 'floor-1' : activeFloor),
             x: pendingCoords.x,
             y: pendingCoords.y,
             iconType: selectedIcon,
             details: details.trim(),
-            image: imageUrl,
-            imageId
+            image: imageUrl 
         });
         
         setDropdownOpen(false);
