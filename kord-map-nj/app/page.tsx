@@ -303,6 +303,7 @@ export default function App() {
                 availableIcons={availableIcons}
                 editPoint={editingPoint}
                 editorPassword={editorPassword}
+                isLocalMode={isLocalMode}
                 onClose={() => {
                     setCreateModalOpen(false);
                     setEditingPoint(null);

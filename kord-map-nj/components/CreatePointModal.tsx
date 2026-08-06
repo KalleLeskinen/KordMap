@@ -11,9 +11,10 @@ interface CreateModalProps {
     onClose: () => void;
     onSave: (point: PointData) => void;
     editorPassword: string;
+    isLocalMode: boolean;
 }
 
-export default function CreatePointModal({ isOpen, pendingCoords, activeFloor, availableIcons, editPoint, onClose, onSave, editorPassword }: CreateModalProps) {
+export default function CreatePointModal({ isOpen, pendingCoords, activeFloor, availableIcons, editPoint, onClose, onSave, editorPassword, isLocalMode }: CreateModalProps) {
     const [selectedIcon, setSelectedIcon] = useState('');
     const [dropdownOpen, setDropdownOpen] = useState(false);
     const [details, setDetails] = useState('');
@@ -69,25 +70,31 @@ export default function CreatePointModal({ isOpen, pendingCoords, activeFloor, a
     };
 
     const handleSave = async () => {
-        // If editing, preserve the old image URL unless they attached a new file
+        // If editing, preserve the old image URL unless they attach a new file
         let imageUrl = editPoint ? editPoint.image : null;
 
         if (imageFile) {
             setIsUploading(true);
             try {
-                const response = await fetch(`/api/upload?filename=${Date.now()}-${imageFile.name}&pass=${encodeURIComponent(editorPassword)}`, {
-                method: 'POST',
-                body: imageFile,
-                });
-                
-                if (response.ok) {
-                    const blob = await response.json();
-                    imageUrl = blob.url; 
+                if (isLocalMode || !editorPassword) {
+                    imageUrl = await convertToBase64(imageFile);
                 } else {
-                    console.error('Failed to upload image');
+                    const response = await fetch(`/api/upload?filename=${Date.now()}-${imageFile.name}&pass=${encodeURIComponent(editorPassword)}`, {
+                        method: 'POST',
+                        body: imageFile,
+                    });
+
+                    if (response.ok) {
+                        const blob = await response.json();
+                        imageUrl = blob.url ?? await convertToBase64(imageFile);
+                    } else {
+                        console.warn('Remote upload failed, falling back to local image encoding');
+                        imageUrl = await convertToBase64(imageFile);
+                    }
                 }
             } catch (error) {
                 console.error('Upload error:', error);
+                imageUrl = await convertToBase64(imageFile);
             } finally {
                 setIsUploading(false);
             }
