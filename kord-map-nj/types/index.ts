@@ -10,6 +10,7 @@ export interface PointData {
     iconType: string;
     details?: string;
     image?: string | null;
+    imageId?: string | null;
 }
 
 export interface MapConfig {
