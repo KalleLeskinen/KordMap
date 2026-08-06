@@ -9,6 +9,7 @@ interface MapViewerProps {
     activeFilters: Set<string>;
     mode: 'VIEW' | 'ADD' | 'MOVE';
     mapScale?: number;
+    zoomStartDistance?: number;
     onMapClick: (x: number, y: number) => void;
     onPointClick: (point: PointData, x: number, y: number) => void;
     onPointMove: (id: string, x: number, y: number) => void;
@@ -21,6 +22,7 @@ export default function MapViewer({
     activeFilters,
     mode,
     mapScale = 1,
+    zoomStartDistance = 7,
     onMapClick,
     onPointClick,
     onPointMove
@@ -111,7 +113,7 @@ export default function MapViewer({
             overlaySvg.setAttribute('viewBox', vbStr);
             
             const zoomRatio = vb.w / initialWidthRef.current;
-            setScale(Math.max(0.5, Math.min(5.0, zoomRatio * 7.0)));
+            setScale(Math.max(0.5, Math.min(5.0, zoomRatio * zoomStartDistance)));
         };
         updateViewBox();
 

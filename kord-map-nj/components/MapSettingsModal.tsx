@@ -6,14 +6,16 @@ interface MapSettingsModalProps {
     initialFloors: string[];
     initialIcons: string[];
     initialMapScale: number;
+    initialZoomStartDistance: number;
     onClose: () => void;
-    onSave: (floors: string[], icons: string[], mapScale: number) => void;
+    onSave: (floors: string[], icons: string[], mapScale: number, zoomStartDistance: number) => void;
 }
 
-export default function MapSettingsModal({ isOpen, initialFloors, initialIcons, initialMapScale, onClose, onSave }: MapSettingsModalProps) {
+export default function MapSettingsModal({ isOpen, initialFloors, initialIcons, initialMapScale, initialZoomStartDistance, onClose, onSave }: MapSettingsModalProps) {
     const [floors, setFloors] = useState<string[]>([]);
     const [icons, setIcons] = useState<string[]>([]);
     const [mapScale, setMapScale] = useState<number>(1);
+    const [zoomStartDistance, setZoomStartDistance] = useState<number>(7);
     
     const [newFloor, setNewFloor] = useState('');
     const [newIcon, setNewIcon] = useState('');
@@ -23,10 +25,11 @@ export default function MapSettingsModal({ isOpen, initialFloors, initialIcons, 
             setFloors([...initialFloors]);
             setIcons([...initialIcons]);
             setMapScale(initialMapScale);
+            setZoomStartDistance(initialZoomStartDistance);
             setNewFloor('');
             setNewIcon('');
         }
-    }, [isOpen, initialFloors, initialIcons, initialMapScale]);
+    }, [isOpen, initialFloors, initialIcons, initialMapScale, initialZoomStartDistance]);
 
     if (!isOpen) return null;
 
@@ -49,7 +52,7 @@ export default function MapSettingsModal({ isOpen, initialFloors, initialIcons, 
     };
 
     const handleSave = () => {
-        onSave(floors, icons, mapScale);
+        onSave(floors, icons, mapScale, zoomStartDistance);
         onClose();
     };
 
@@ -63,15 +66,27 @@ export default function MapSettingsModal({ isOpen, initialFloors, initialIcons, 
                     {/* General Settings */}
                     <div className="mb-[25px]">
                         <p className="text-[0.85rem] text-[#72757a] mb-[10px] uppercase tracking-[1px] font-bold">General Settings</p>
-                        <div className="flex items-center gap-[10px] bg-[#191b1d] border border-[#282a2e] rounded-[2px] p-[8px_12px]">
-                            <label className="text-[#c4c5c7] text-[0.9rem] flex-1">Map Scale Multiplier:</label>
-                            <input 
-                                type="number"
-                                step="0.1"
-                                value={mapScale}
-                                onChange={(e) => setMapScale(parseFloat(e.target.value) || 1)}
-                                className="w-[80px] bg-[#121315] text-[#d18d32] font-bold border border-[#282a2e] rounded-[2px] p-[4px_8px] text-right focus:outline-none focus:border-[#d18d32]"
-                            />
+                        <div className="flex flex-col gap-[8px]">
+                            <div className="flex items-center gap-[10px] bg-[#191b1d] border border-[#282a2e] rounded-[2px] p-[8px_12px]">
+                                <label className="text-[#c4c5c7] text-[0.9rem] flex-1">Map Scale Multiplier:</label>
+                                <input 
+                                    type="number"
+                                    step="0.1"
+                                    value={mapScale}
+                                    onChange={(e) => setMapScale(parseFloat(e.target.value) || 1)}
+                                    className="w-[80px] bg-[#121315] text-[#d18d32] font-bold border border-[#282a2e] rounded-[2px] p-[4px_8px] text-right focus:outline-none focus:border-[#d18d32]"
+                                />
+                            </div>
+                            <div className="flex items-center gap-[10px] bg-[#191b1d] border border-[#282a2e] rounded-[2px] p-[8px_12px]">
+                                <label className="text-[#c4c5c7] text-[0.9rem] flex-1">Zoom Start Distance:</label>
+                                <input 
+                                    type="number"
+                                    step="0.1"
+                                    value={zoomStartDistance}
+                                    onChange={(e) => setZoomStartDistance(parseFloat(e.target.value) || 7)}
+                                    className="w-[80px] bg-[#121315] text-[#d18d32] font-bold border border-[#282a2e] rounded-[2px] p-[4px_8px] text-right focus:outline-none focus:border-[#d18d32]"
+                                />
+                            </div>
                         </div>
                     </div>
 

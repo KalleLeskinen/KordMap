@@ -6,7 +6,23 @@ import CreatePointModal from '@/components/CreatePointModal';
 import PointViewer from '@/components/PointViewer';
 import AuthModal from '@/components/AuthModal';
 import MapSettingsModal from '@/components/MapSettingsModal';
-import { PointData } from '@/types';
+import { PointData, MapScaleValue } from '@/types';
+
+const normalizeMapScale = (value: MapScaleValue | null | undefined) => {
+    if (Array.isArray(value)) {
+        const [baseValue, zoomValue] = value;
+        return {
+            multiplier: Number(baseValue ?? 1),
+            zoomDistance: Number(zoomValue ?? 7)
+        };
+    }
+
+    const numericValue = typeof value === 'number' ? value : Number(value ?? 1);
+    return {
+        multiplier: Number.isFinite(numericValue) ? numericValue : 1,
+        zoomDistance: Number.isFinite(numericValue) ? numericValue : 7
+    };
+};
 
 export default function App() {
     const [isSelectingMap, setIsSelectingMap] = useState(true);
@@ -24,6 +40,7 @@ export default function App() {
     const [availableIcons, setAvailableIcons] = useState<string[]>([]);
     const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
     const [mapScale, setMapScale] = useState<number>(1);
+    const [zoomStartDistance, setZoomStartDistance] = useState<number>(7);
     
     // Point Data State
     const [points, setPoints] = useState<PointData[]>([]);
@@ -47,9 +64,11 @@ export default function App() {
                 if (configRes.ok) {
                     const parsedData = await configRes.json();
                     const icons = parsedData.icons || [];
+                    const parsedScale = normalizeMapScale(parsedData.mapScale);
                     setAvailableIcons(icons);
                     setAvailableFloors(parsedData.floors || ['0', '1']);
-                    setMapScale(parsedData.mapScale || 1);
+                    setMapScale(parsedScale.multiplier);
+                    setZoomStartDistance(parsedScale.zoomDistance);
                     setActiveFilters(new Set(icons));
                 }
 
@@ -101,7 +120,7 @@ export default function App() {
 
     const handleExport = () => {
         if (points.length === 0) return alert("No document to export!");
-        const dataStr = JSON.stringify({ map: currentMap, mapScale, points }, null, 2);
+        const dataStr = JSON.stringify({ map: currentMap, mapScale: [mapScale, zoomStartDistance], points }, null, 2);
         const blob = new Blob([dataStr], { type: 'application/json' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -124,7 +143,11 @@ export default function App() {
                     if (!confirm(`Warning: document data is tagged for '${parsed.map}', but current Map is '${currentMap}'. Load anyway?`)) return;
                 }
                 setPoints(parsed.points || []);
-                if (parsed.mapScale) setMapScale(parsed.mapScale);
+                if (parsed.mapScale) {
+                    const parsedScale = normalizeMapScale(parsed.mapScale);
+                    setMapScale(parsedScale.multiplier);
+                    setZoomStartDistance(parsedScale.zoomDistance);
+                }
             } catch (err) {
                 alert("Data corruption detected. File invalid.");
             }
@@ -183,6 +206,7 @@ export default function App() {
                 activeFilters={activeFilters}
                 mode={mode}
                 mapScale={mapScale}
+                zoomStartDistance={zoomStartDistance}
                 onMapClick={(x, y) => {
                     if (mode === 'ADD' && !!editorPassword) {
                         setEditingPoint(null);
@@ -256,11 +280,13 @@ export default function App() {
                 initialFloors={availableFloors}
                 initialIcons={availableIcons}
                 initialMapScale={mapScale}
+                initialZoomStartDistance={zoomStartDistance}
                 onClose={() => setSettingsModalOpen(false)}
-                onSave={(newFloors, newIcons, newMapScale) => {
+                onSave={(newFloors, newIcons, newMapScale, newZoomStartDistance) => {
                     setAvailableFloors(newFloors);
                     setAvailableIcons(newIcons);
                     setMapScale(newMapScale);
+                    setZoomStartDistance(newZoomStartDistance);
                     
                     const updatedFilters = new Set(activeFilters);
                     newIcons.forEach(icon => updatedFilters.add(icon));

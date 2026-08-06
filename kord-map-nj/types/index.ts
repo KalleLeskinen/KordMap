@@ -1,5 +1,7 @@
 //data model
 
+export type MapScaleValue = number | Array<number | string>;
+
 export interface PointData {
     id: string;
     floor: string;
@@ -14,4 +16,5 @@ export interface MapConfig {
     name: string;
     floors: string[];
     icons: string[];
+    mapScale?: MapScaleValue;
 }
