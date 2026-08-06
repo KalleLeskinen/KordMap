@@ -1,0 +1,275 @@
+'use client';
+import { useState, useEffect } from 'react';
+import Sidebar from '@/components/Sidebar';
+import MapViewer from '@/components/MapViewer';
+import CreatePointModal from '@/components/CreatePointModal';
+import PointViewer from '@/components/PointViewer';
+import AuthModal from '@/components/AuthModal';
+import MapSettingsModal from '@/components/MapSettingsModal';
+import { PointData } from '@/types';
+
+export default function App() {
+    const [isSelectingMap, setIsSelectingMap] = useState(true);
+    const [currentMap, setCurrentMap] = useState('');
+    const [activeFloor, setActiveFloor] = useState('floor-1');
+    const [mode, setMode] = useState<'VIEW' | 'ADD' | 'MOVE'>('VIEW');
+    
+    // Auth State
+    const [editorPassword, setEditorPassword] = useState('');
+    const [authModalOpen, setAuthModalOpen] = useState(false);
+    const [settingsModalOpen, setSettingsModalOpen] = useState(false);
+    
+    // Map Config State
+    const [availableFloors, setAvailableFloors] = useState<string[]>([]);
+    const [availableIcons, setAvailableIcons] = useState<string[]>([]);
+    const [activeFilters, setActiveFilters] = useState<Set<string>>(new Set());
+    const [mapScale, setMapScale] = useState<number>(1);
+    
+    // Point Data State
+    const [points, setPoints] = useState<PointData[]>([]);
+    
+    // Modal & Tooltip State
+    const [createModalOpen, setCreateModalOpen] = useState(false);
+    const [pendingCoords, setPendingCoords] = useState<{x: number, y: number} | null>(null);
+    const [viewedPoint, setViewedPoint] = useState<PointData | null>(null);
+    const [viewedPosition, setViewedPosition] = useState<{x: number, y: number} | null>(null);
+    const [editingPoint, setEditingPoint] = useState<PointData | null>(null);
+
+    // Initial Load
+    useEffect(() => {
+        const savedPass = localStorage.getItem('editor_pass');
+        if (savedPass) setEditorPassword(savedPass);
+
+        if (!currentMap) return;
+        const loadMapData = async () => {
+            try {
+                const configRes = await fetch(`/maps/${currentMap}/mapdata.json`);
+                if (configRes.ok) {
+                    const parsedData = await configRes.json();
+                    const icons = parsedData.icons || [];
+                    setAvailableIcons(icons);
+                    setAvailableFloors(parsedData.floors || ['0', '1']);
+                    setMapScale(parsedData.mapScale || 1);
+                    setActiveFilters(new Set(icons));
+                }
+
+                const pointsRes = await fetch(`/maps/${currentMap}/${currentMap}-points.json`);
+                if (pointsRes.ok) {
+                    const parsedPoints = await pointsRes.json();
+                    if (parsedPoints.points) setPoints(parsedPoints.points);
+                } else {
+                    setPoints([]);
+                }
+            } catch (err) {
+                console.error("Error loading map data", err);
+            }
+        };
+        loadMapData();
+    }, [currentMap]);
+
+    // Auth Handlers
+    const handleLogin = async (pass: string) => {
+        const res = await fetch('/api/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pass })
+        });
+        if (res.ok) {
+            setEditorPassword(pass);
+            localStorage.setItem('editor_pass', pass);
+            return true;
+        }
+        return false;
+    };
+
+    const handleLogout = () => {
+        setEditorPassword('');
+        localStorage.removeItem('editor_pass');
+        setMode('VIEW');
+        setCreateModalOpen(false);
+        setEditingPoint(null);
+        setSettingsModalOpen(false);
+    };
+
+    // Filter Handlers
+    const toggleFilter = (icon: string) => {
+        const newFilters = new Set(activeFilters);
+        if (newFilters.has(icon)) newFilters.delete(icon);
+        else newFilters.add(icon);
+        setActiveFilters(newFilters);
+    };
+
+    const handleExport = () => {
+        if (points.length === 0) return alert("No document to export!");
+        const dataStr = JSON.stringify({ map: currentMap, mapScale, points }, null, 2);
+        const blob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${currentMap}-points.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    };
+
+    const handleLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const parsed = JSON.parse(event.target?.result as string);
+                if (parsed.map && parsed.map !== currentMap) {
+                    if (!confirm(`Warning: document data is tagged for '${parsed.map}', but current Map is '${currentMap}'. Load anyway?`)) return;
+                }
+                setPoints(parsed.points || []);
+                if (parsed.mapScale) setMapScale(parsed.mapScale);
+            } catch (err) {
+                alert("Data corruption detected. File invalid.");
+            }
+        };
+        reader.readAsText(file);
+        e.target.value = ""; 
+    };
+
+    return (
+        <div className="flex h-screen bg-[#09090a] text-[#c4c5c7] overflow-hidden select-none">
+            {isSelectingMap && (
+                <div className="fixed inset-0 bg-[#121315] flex flex-col items-center justify-center z-[200]">
+                    <h1 className="text-[#d18d32] font-normal tracking-[2px] uppercase mb-5 text-[2rem]">Select Map</h1>
+                    <div className="flex gap-5 mt-5">
+                        {['customs', 'factory'].map(mapName => (
+                            <div 
+                                key={mapName}
+                                onClick={() => {
+                                    setCurrentMap(mapName);
+                                    setIsSelectingMap(false);
+                                    setPoints([]); 
+                                    setActiveFloor('floor-1'); 
+                                }}
+                                className="bg-[#191b1d] p-[30px_50px] rounded-[4px] text-[1.25rem] font-bold cursor-pointer transition-all duration-200 border border-[#282a2e] uppercase tracking-[1px] text-[#72757a] hover:bg-[#232528] hover:border-[#d18d32] hover:text-[#d18d32] hover:-translate-y-[3px] shadow-[0_5px_15px_rgba(0,0,0,0.5)]"
+                            >
+                                {mapName}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            <Sidebar 
+                currentMap={currentMap}
+                activeFloor={activeFloor}
+                setActiveFloor={(f) => { setActiveFloor(f); setViewedPoint(null); }}
+                mode={mode}
+                setMode={(m) => { setMode(m); setViewedPoint(null); }}
+                availableFloors={availableFloors}
+                availableIcons={availableIcons}
+                activeFilters={activeFilters}
+                toggleFilter={toggleFilter}
+                isAuthenticated={!!editorPassword}
+                onLoginClick={() => setAuthModalOpen(true)}
+                onLogoutClick={handleLogout}
+                onExport={handleExport}
+                onLoad={handleLoad}
+                onChangeMap={() => setIsSelectingMap(true)}
+                onOpenSettings={() => setSettingsModalOpen(true)}
+            />
+            
+            <MapViewer 
+                currentMap={currentMap}
+                activeFloor={activeFloor}
+                points={points}
+                activeFilters={activeFilters}
+                mode={mode}
+                mapScale={mapScale}
+                onMapClick={(x, y) => {
+                    if (mode === 'ADD' && !!editorPassword) {
+                        setEditingPoint(null);
+                        setPendingCoords({ x, y });
+                        setCreateModalOpen(true);
+                    } else if (mode === 'VIEW') {
+                        setViewedPoint(null);
+                    }
+                }}
+                onPointClick={(pt, x, y) => {
+                    if (pt.floor !== activeFloor) {
+                        setActiveFloor(pt.floor);
+                    }
+                    setViewedPoint(pt);
+                    setViewedPosition({ x, y });
+                }}
+                onPointMove={(id, x, y) => {
+                    if (!!editorPassword) {
+                        setPoints(prev => prev.map(p => p.id === id ? { ...p, x, y } : p));
+                    }
+                }}
+            />
+
+            <CreatePointModal 
+                isOpen={createModalOpen}
+                pendingCoords={pendingCoords}
+                activeFloor={activeFloor}
+                availableIcons={availableIcons}
+                editPoint={editingPoint}
+                editorPassword={editorPassword}
+                onClose={() => {
+                    setCreateModalOpen(false);
+                    setEditingPoint(null);
+                }}
+                onSave={(newPoint) => {
+                    if (editingPoint) {
+                        setPoints(prev => prev.map(p => p.id === newPoint.id ? newPoint : p));
+                    } else {
+                        setPoints([...points, newPoint]);
+                    }
+                    setCreateModalOpen(false);
+                    setEditingPoint(null);
+                }}
+            />
+
+            <PointViewer 
+                point={viewedPoint}
+                position={viewedPosition}
+                isAuthenticated={!!editorPassword}
+                onClose={() => setViewedPoint(null)}
+                onDelete={(id) => {
+                    setPoints(prev => prev.filter(p => p.id !== id));
+                    setViewedPoint(null);
+                }}
+                onEdit={() => {
+                    setEditingPoint(viewedPoint);
+                    setPendingCoords({ x: viewedPoint!.x, y: viewedPoint!.y });
+                    setCreateModalOpen(true);
+                    setViewedPoint(null); 
+                }}
+            />
+
+            <AuthModal 
+                isOpen={authModalOpen} 
+                onClose={() => setAuthModalOpen(false)} 
+                onLogin={handleLogin} 
+            />
+
+            <MapSettingsModal
+                isOpen={settingsModalOpen}
+                initialFloors={availableFloors}
+                initialIcons={availableIcons}
+                initialMapScale={mapScale}
+                onClose={() => setSettingsModalOpen(false)}
+                onSave={(newFloors, newIcons, newMapScale) => {
+                    setAvailableFloors(newFloors);
+                    setAvailableIcons(newIcons);
+                    setMapScale(newMapScale);
+                    
+                    const updatedFilters = new Set(activeFilters);
+                    newIcons.forEach(icon => updatedFilters.add(icon));
+                    Array.from(updatedFilters).forEach(icon => {
+                        if (!newIcons.includes(icon)) updatedFilters.delete(icon);
+                    });
+                    setActiveFilters(updatedFilters);
+                }}
+            />
+        </div>
+    );
+}
