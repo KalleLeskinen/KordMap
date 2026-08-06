@@ -1,6 +1,6 @@
 import { promises as fs } from 'fs';
 import path from 'path';
-import { list, put } from '@vercel/blob';
+import { get, list, put } from '@vercel/blob';
 import { NextResponse } from 'next/server';
 
 const getMapFilePath = (map: string, kind: string) => {
@@ -20,11 +20,13 @@ async function readPersistedMapData(map: string, kind: string) {
     const prefix = `maps/${map}/${kind}.json`;
     const { blobs } = await list({ prefix });
     const match = blobs.find((blob) => blob.pathname === prefix);
-    if (!match?.url) return null;
+    if (!match) return null;
 
-    const response = await fetch(match.url);
-    if (!response.ok) return null;
-    return response.json();
+    const blob = await get(match.pathname, { access: 'private', useCache: false });
+    if (!blob || blob.statusCode !== 200 || !blob.stream) return null;
+
+    const text = await new Response(blob.stream).text();
+    return JSON.parse(text);
 }
 
 export async function GET(request: Request): Promise<NextResponse> {
@@ -68,7 +70,7 @@ export async function POST(request: Request): Promise<NextResponse> {
         const payload = await request.json();
         const blobPath = `maps/${map}/${kind}.json`;
         const blob = await put(blobPath, JSON.stringify(payload, null, 2), {
-            access: 'public',
+            access: 'private',
             contentType: 'application/json',
         });
 
