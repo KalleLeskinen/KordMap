@@ -11,7 +11,9 @@ interface SidebarProps {
     activeFilters: Set<string>;
     toggleFilter: (icon: string) => void;
     isAuthenticated: boolean;
+    isLocalMode: boolean;
     onLoginClick: () => void;
+    onLocalModeClick: () => void;
     onLogoutClick: () => void;
     onExport: () => void;
     onLoad: (event: React.ChangeEvent<HTMLInputElement>) => void;
@@ -31,6 +33,7 @@ export default function Sidebar({
     toggleFilter,
     isAuthenticated,
     onLoginClick,
+    onLocalModeClick,
     onLogoutClick,
     onExport,
     onLoad,
@@ -176,12 +179,20 @@ export default function Sidebar({
                             Logout
                         </button>
                     ) : (
-                        <button 
-                            onClick={onLoginClick}
-                            className="w-full p-[8px] bg-[#191b1d] text-[#72757a] border border-[#282a2e] rounded-[2px] font-bold uppercase text-[0.75rem] hover:bg-[#232528] hover:text-[#d18d32] transition-colors"
-                        >
-                            Editor Login
-                        </button>
+                        <div className="grid gap-[10px]">
+                            <button 
+                                onClick={onLoginClick}
+                                className="w-full p-[8px] bg-[#191b1d] text-[#72757a] border border-[#282a2e] rounded-[2px] font-bold uppercase text-[0.75rem] hover:bg-[#232528] hover:text-[#d18d32] transition-colors"
+                            >
+                                Editor Login
+                            </button>
+                            <button
+                                onClick={onLocalModeClick}
+                                className="w-full p-[8px] bg-[#232528] text-[#c4c5c7] border border-[#282a2e] rounded-[2px] font-bold uppercase text-[0.75rem] hover:bg-[#2e3438] transition-colors"
+                            >
+                                Use Local Editor
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>

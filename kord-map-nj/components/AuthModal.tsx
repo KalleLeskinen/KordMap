@@ -5,9 +5,10 @@ interface AuthModalProps {
     isOpen: boolean;
     onClose: () => void;
     onLogin: (password: string) => Promise<boolean>;
+    onLocalLogin: () => void;
 }
 
-export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) {
+export default function AuthModal({ isOpen, onClose, onLogin, onLocalLogin }: AuthModalProps) {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [error, setError] = useState('');
@@ -59,10 +60,15 @@ export default function AuthModal({ isOpen, onClose, onLogin }: AuthModalProps) 
                     
                     {error && <p className="text-[#9c3434] text-[0.8rem] mb-[15px] font-bold">{error}</p>}
                     
-                    <div className="flex justify-end gap-[10px] mt-[20px]">
-                        <button type="button" onClick={onClose} className="px-[16px] py-[8px] bg-[#191b1d] text-[#c4c5c7] border border-[#282a2e] rounded-[2px] font-bold uppercase text-[0.8rem] hover:bg-[#232528]">Cancel</button>
-                        <button type="submit" disabled={isLoading} className="px-[16px] py-[8px] bg-[#d18d32] text-black border border-[#d18d32] rounded-[2px] font-bold uppercase text-[0.8rem] hover:bg-[#e59f3d] disabled:opacity-50">
-                            {isLoading ? 'Verifying...' : 'Login'}
+                    <div className="flex flex-col gap-[10px] mt-[20px]">
+                        <div className="flex justify-between gap-[10px]">
+                            <button type="button" onClick={onClose} className="px-[16px] py-[8px] bg-[#191b1d] text-[#c4c5c7] border border-[#282a2e] rounded-[2px] font-bold uppercase text-[0.8rem] hover:bg-[#232528]">Cancel</button>
+                            <button type="submit" disabled={isLoading} className="px-[16px] py-[8px] bg-[#d18d32] text-black border border-[#d18d32] rounded-[2px] font-bold uppercase text-[0.8rem] hover:bg-[#e59f3d] disabled:opacity-50">
+                                {isLoading ? 'Verifying...' : 'Login'}
+                            </button>
+                        </div>
+                        <button type="button" onClick={onLocalLogin} className="w-full px-[16px] py-[8px] bg-[#232528] text-[#c4c5c7] border border-[#282a2e] rounded-[2px] font-bold uppercase text-[0.8rem] hover:bg-[#2e3438]">
+                            Use Local Editor
                         </button>
                     </div>
                 </form>

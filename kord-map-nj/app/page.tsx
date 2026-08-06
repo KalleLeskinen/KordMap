@@ -44,6 +44,7 @@ export default function App() {
     
     // Auth State
     const [editorPassword, setEditorPassword] = useState('');
+    const [isLocalMode, setIsLocalMode] = useState(false);
     const [authModalOpen, setAuthModalOpen] = useState(false);
     const [settingsModalOpen, setSettingsModalOpen] = useState(false);
     
@@ -67,7 +68,12 @@ export default function App() {
     // Initial Load
     useEffect(() => {
         const savedPass = localStorage.getItem('editor_pass');
-        if (savedPass) setEditorPassword(savedPass);
+        const localEditor = localStorage.getItem('editor_local');
+        if (savedPass) {
+            setEditorPassword(savedPass);
+        } else if (localEditor === 'true') {
+            setIsLocalMode(true);
+        }
 
         if (!currentMap) return;
         const loadMapData = async () => {
@@ -108,15 +114,25 @@ export default function App() {
         });
         if (res.ok) {
             setEditorPassword(pass);
+            setIsLocalMode(false);
             localStorage.setItem('editor_pass', pass);
+            localStorage.removeItem('editor_local');
             return true;
         }
         return false;
     };
 
+    const handleLocalLogin = () => {
+        setIsLocalMode(true);
+        setAuthModalOpen(false);
+        localStorage.setItem('editor_local', 'true');
+    };
+
     const handleLogout = () => {
         setEditorPassword('');
+        setIsLocalMode(false);
         localStorage.removeItem('editor_pass');
+        localStorage.removeItem('editor_local');
         setMode('VIEW');
         setCreateModalOpen(false);
         setEditingPoint(null);
@@ -145,8 +161,11 @@ export default function App() {
         URL.revokeObjectURL(url);
     };
 
+    const isEditorActive = !!editorPassword || isLocalMode;
+    const canPersistRemotely = !!editorPassword && !isLocalMode;
+
     const saveMapSettings = async (newFloors: string[], newIcons: string[], newMapScale: number, newZoomStartDistance: number) => {
-        if (!editorPassword || !currentMap) return;
+        if (!canPersistRemotely || !currentMap) return;
 
         try {
             const mapDataPayload = {
@@ -163,7 +182,7 @@ export default function App() {
     };
 
     const savePoints = async (nextPoints: PointData[]) => {
-        if (!editorPassword || !currentMap) return;
+        if (!canPersistRemotely || !currentMap) return;
 
         try {
             await persistMapData(currentMap, 'points', { points: nextPoints }, editorPassword);
@@ -231,8 +250,10 @@ export default function App() {
                 availableIcons={availableIcons}
                 activeFilters={activeFilters}
                 toggleFilter={toggleFilter}
-                isAuthenticated={!!editorPassword}
+                isAuthenticated={isEditorActive}
+                isLocalMode={isLocalMode}
                 onLoginClick={() => setAuthModalOpen(true)}
+                onLocalModeClick={handleLocalLogin}
                 onLogoutClick={handleLogout}
                 onExport={handleExport}
                 onLoad={handleLoad}
@@ -249,7 +270,7 @@ export default function App() {
                 mapScale={mapScale}
                 zoomStartDistance={zoomStartDistance}
                 onMapClick={(x, y) => {
-                    if (mode === 'ADD' && !!editorPassword) {
+                    if (mode === 'ADD' && isEditorActive) {
                         setEditingPoint(null);
                         setPendingCoords({ x, y });
                         setCreateModalOpen(true);
@@ -265,7 +286,7 @@ export default function App() {
                     setViewedPosition({ x, y });
                 }}
                 onPointMove={(id, x, y) => {
-                    if (!!editorPassword) {
+                    if (isEditorActive) {
                         setPoints(prev => {
                             const nextPoints = prev.map(p => p.id === id ? { ...p, x, y } : p);
                             void savePoints(nextPoints);
@@ -301,7 +322,7 @@ export default function App() {
             <PointViewer 
                 point={viewedPoint}
                 position={viewedPosition}
-                isAuthenticated={!!editorPassword}
+                isAuthenticated={isEditorActive}
                 onClose={() => setViewedPoint(null)}
                 onDelete={(id) => {
                     setPoints(prev => {
@@ -323,6 +344,7 @@ export default function App() {
                 isOpen={authModalOpen} 
                 onClose={() => setAuthModalOpen(false)} 
                 onLogin={handleLogin} 
+                onLocalLogin={handleLocalLogin}
             />
 
             <MapSettingsModal
