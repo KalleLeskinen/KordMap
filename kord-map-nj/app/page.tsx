@@ -360,6 +360,9 @@ export default function App() {
                         : [...points, newPoint];
 
                     setPoints(nextPoints);
+                    if (editorPassword && currentMap) {
+                        void savePoints(nextPoints);
+                    }
                     setCreateModalOpen(false);
                     setEditingPoint(null);
                 }}
