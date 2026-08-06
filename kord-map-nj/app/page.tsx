@@ -8,6 +8,18 @@ import AuthModal from '@/components/AuthModal';
 import MapSettingsModal from '@/components/MapSettingsModal';
 import { PointData, MapScaleValue } from '@/types';
 
+const persistMapData = async (map: string, kind: 'mapdata' | 'points', payload: unknown, pass: string) => {
+    const response = await fetch(`/api/maps?map=${encodeURIComponent(map)}&kind=${kind}&pass=${encodeURIComponent(pass)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+        throw new Error(`Failed to save ${kind}`);
+    }
+};
+
 const normalizeMapScale = (value: MapScaleValue | null | undefined) => {
     if (Array.isArray(value)) {
         const [baseValue, zoomValue] = value;
@@ -60,7 +72,7 @@ export default function App() {
         if (!currentMap) return;
         const loadMapData = async () => {
             try {
-                const configRes = await fetch(`/maps/${currentMap}/mapdata.json`);
+                const configRes = await fetch(`/api/maps?map=${encodeURIComponent(currentMap)}&kind=mapdata`);
                 if (configRes.ok) {
                     const parsedData = await configRes.json();
                     const icons = parsedData.icons || [];
@@ -72,10 +84,11 @@ export default function App() {
                     setActiveFilters(new Set(icons));
                 }
 
-                const pointsRes = await fetch(`/maps/${currentMap}/${currentMap}-points.json`);
+                const pointsRes = await fetch(`/api/maps?map=${encodeURIComponent(currentMap)}&kind=points`);
                 if (pointsRes.ok) {
                     const parsedPoints = await pointsRes.json();
                     if (parsedPoints.points) setPoints(parsedPoints.points);
+                    else setPoints([]);
                 } else {
                     setPoints([]);
                 }
@@ -130,6 +143,34 @@ export default function App() {
         a.click();
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
+    };
+
+    const saveMapSettings = async (newFloors: string[], newIcons: string[], newMapScale: number, newZoomStartDistance: number) => {
+        if (!editorPassword || !currentMap) return;
+
+        try {
+            const mapDataPayload = {
+                floors: newFloors,
+                icons: newIcons,
+                mapScale: [newMapScale, newZoomStartDistance]
+            };
+
+            await persistMapData(currentMap, 'mapdata', mapDataPayload, editorPassword);
+        } catch (err) {
+            console.error('Failed to save map settings', err);
+            alert('Map settings could not be saved to storage.');
+        }
+    };
+
+    const savePoints = async (nextPoints: PointData[]) => {
+        if (!editorPassword || !currentMap) return;
+
+        try {
+            await persistMapData(currentMap, 'points', { points: nextPoints }, editorPassword);
+        } catch (err) {
+            console.error('Failed to save map points', err);
+            alert('Map points could not be saved to storage.');
+        }
     };
 
     const handleLoad = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -225,7 +266,11 @@ export default function App() {
                 }}
                 onPointMove={(id, x, y) => {
                     if (!!editorPassword) {
-                        setPoints(prev => prev.map(p => p.id === id ? { ...p, x, y } : p));
+                        setPoints(prev => {
+                            const nextPoints = prev.map(p => p.id === id ? { ...p, x, y } : p);
+                            void savePoints(nextPoints);
+                            return nextPoints;
+                        });
                     }
                 }}
             />
@@ -242,11 +287,12 @@ export default function App() {
                     setEditingPoint(null);
                 }}
                 onSave={(newPoint) => {
-                    if (editingPoint) {
-                        setPoints(prev => prev.map(p => p.id === newPoint.id ? newPoint : p));
-                    } else {
-                        setPoints([...points, newPoint]);
-                    }
+                    const nextPoints = editingPoint
+                        ? points.map(p => p.id === newPoint.id ? newPoint : p)
+                        : [...points, newPoint];
+
+                    setPoints(nextPoints);
+                    void savePoints(nextPoints);
                     setCreateModalOpen(false);
                     setEditingPoint(null);
                 }}
@@ -258,7 +304,11 @@ export default function App() {
                 isAuthenticated={!!editorPassword}
                 onClose={() => setViewedPoint(null)}
                 onDelete={(id) => {
-                    setPoints(prev => prev.filter(p => p.id !== id));
+                    setPoints(prev => {
+                        const nextPoints = prev.filter(p => p.id !== id);
+                        void savePoints(nextPoints);
+                        return nextPoints;
+                    });
                     setViewedPoint(null);
                 }}
                 onEdit={() => {
@@ -282,7 +332,7 @@ export default function App() {
                 initialMapScale={mapScale}
                 initialZoomStartDistance={zoomStartDistance}
                 onClose={() => setSettingsModalOpen(false)}
-                onSave={(newFloors, newIcons, newMapScale, newZoomStartDistance) => {
+                onSave={async (newFloors, newIcons, newMapScale, newZoomStartDistance) => {
                     setAvailableFloors(newFloors);
                     setAvailableIcons(newIcons);
                     setMapScale(newMapScale);
@@ -294,6 +344,8 @@ export default function App() {
                         if (!newIcons.includes(icon)) updatedFilters.delete(icon);
                     });
                     setActiveFilters(updatedFilters);
+
+                    await saveMapSettings(newFloors, newIcons, newMapScale, newZoomStartDistance);
                 }}
             />
         </div>
