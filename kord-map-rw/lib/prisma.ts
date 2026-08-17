@@ -8,10 +8,12 @@ const prismaClientSingleton = () => {
   if (!connectionString) {
     throw new Error("❌ DATABASE_URL is missing from your environment variables.");
   }
-    // Uses the standard standard Postgres connection pool
-    const pool = new Pool({ connectionString });
-    const adapter = new PrismaPg(pool);
-    return new PrismaClient({ adapter });
+
+  // Prisma 7 requires the PG Adapter to connect to standard Postgres databases
+  const pool = new Pool({ connectionString });
+  const adapter = new PrismaPg(pool);
+  
+  return new PrismaClient({ adapter });
 };
 
 declare global {
