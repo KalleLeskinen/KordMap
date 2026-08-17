@@ -51,7 +51,9 @@ const MarkerSchema = z.object({
   lng: z.number(),
   floorId: z.string().max(50),
   type: z.string().max(50),
-  imageUrl: z.string().url().max(500).optional().nullable().or(z.literal('')),
+  // 🚀 FIX: Removed .url() so it accepts local paths like "/uploads/..."
+  // Also increased max length to 2000 to safely accommodate long external URLs
+  imageUrl: z.string().max(2000).optional().nullable(),
   submitter: z.string().max(50).optional().nullable(),
   mapName: z.string().max(50),
 });
