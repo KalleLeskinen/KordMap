@@ -96,29 +96,48 @@ export default function MarkerEditor({
     }
 
     setIsSubmitting(true);
+    
     try {
       let finalImageUrl = formData.imageUrl;
+
       if (finalImageUrl.startsWith('data:image')) {
         setIsProcessingImage(true);
-        const uploadedUrl = await uploadImage(finalImageUrl);
+        // 🚀 FIX: Pass the editorPassword here so admins don't get blocked!
+        const uploadedUrl = await uploadImage(finalImageUrl, editorPassword);
         setIsProcessingImage(false);
-        if (uploadedUrl) finalImageUrl = uploadedUrl;
-        else { alert("Image upload failed."); setIsSubmitting(false); return; }
+        
+        if (uploadedUrl) {
+          finalImageUrl = uploadedUrl;
+        } else {
+          alert("Failed to upload image. You may be rate-limited, or storage is misconfigured.");
+          setIsSubmitting(false);
+          return;
+        }
       }
 
       const payload = {
         title: formData.title, description: formData.description, type: formData.type, 
-        imageUrl: finalImageUrl, submitter: formData.submitter,
+        imageUrl: finalImageUrl, submitter: formData.submitter.trim() || 'anon',
         lat: pendingMarker.lat, lng: pendingMarker.lng, floorId: currentFloorId, mapName: mapName,
       };
 
-      let result = editingMarkerId ? await updateMarker(editingMarkerId, payload, editorPassword) : await createMarker(payload, editorPassword);
+      let result;
+      if (editingMarkerId) {
+        result = await updateMarker(editingMarkerId, payload, editorPassword);
+      } else {
+        result = await createMarker(payload, editorPassword);
+      }
 
       if (result?.success && result.marker) {
-        if (!result.autoApproved && typeof addLocalPendingId === 'function') addLocalPendingId(result.marker.id);
-        
-        if (editingMarkerId && result.autoApproved) setMarkers((prev: any[]) => prev.map((m: any) => m.id === editingMarkerId ? result.marker : m));
-        else setMarkers((prev: any[]) => [result.marker, ...prev]);
+        if (!result.autoApproved && typeof addLocalPendingId === 'function') {
+          addLocalPendingId(result.marker.id);
+        }
+
+        if (editingMarkerId && result.autoApproved) {
+          setMarkers((prev: any[]) => prev.map((m: any) => m.id === editingMarkerId ? result.marker : m));
+        } else {
+          setMarkers((prev: any[]) => [result.marker, ...prev]);
+        }
 
         if (!editorPassword) {
           localStorage.setItem('kordLastSubmission', Date.now().toString());
@@ -126,12 +145,21 @@ export default function MarkerEditor({
         }
         
         setSubmitSuccess(true);
-        setTimeout(() => { setSubmitSuccess(false); handleCloseModal(); }, 1000);
-      } else alert("Error saving marker.");
-    } catch (err) { alert("Unexpected error occurred."); } 
-    finally { setIsSubmitting(false); }
+        setTimeout(() => { 
+          setSubmitSuccess(false); 
+          handleCloseModal(); 
+        }, 1000);
+      } else {
+        alert(result?.error || "Error saving marker to database.");
+      }
+    } catch (err) {
+      console.error("Fatal error during save:", err);
+      alert("An unexpected error occurred.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-
+  
   if (!pendingMarker) return null;
 
   if (isRelocating) {

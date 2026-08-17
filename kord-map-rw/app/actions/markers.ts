@@ -21,7 +21,7 @@ const redisClient = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : n
 const rateLimiter = redisClient ? new RateLimiterRedis({
   storeClient: redisClient,
   keyPrefix: 'ratelimit',
-  points: 10, // 10 requests allowed
+  points: 25, // 25 requests allowed
   duration: 3600, // Per 1 hour
 }) : null;
 
@@ -63,17 +63,22 @@ const tarpit = async (ms = 500) => new Promise(resolve => setTimeout(resolve, ms
 // -------------------------------------------------------------------------
 // 🚀 LOCAL FILE SYSTEM IMAGE HOSTING
 // -------------------------------------------------------------------------
-export async function uploadImage(base64Image: string): Promise<string | null> {
+export async function uploadImage(base64Image: string, password?: string): Promise<string | null> {
   await tarpit();
 
-  if (!rateLimiter) return null;
-  const reqHeaders = await headers();
-  const ip = reqHeaders.get('x-forwarded-for') ?? '127.0.0.1';
+  // 🚀 FIX: Ensure admins bypass the image upload rate limit
+  const isEditor = Boolean(EDITOR_PASSWORD && password === EDITOR_PASSWORD);
   
-  try {
-    await rateLimiter.consume(`upload_${ip}`);
-  } catch (e) {
-    return null; // Rate limited
+  if (!isEditor && rateLimiter) {
+    const reqHeaders = await headers();
+    const ip = reqHeaders.get('x-forwarded-for') ?? '127.0.0.1';
+    
+    try {
+      await rateLimiter.consume(`upload_${ip}`);
+    } catch (e) {
+      console.warn(`🔴 Upload rate limit hit for IP: ${ip}`);
+      return null; // Rate limited
+    }
   }
 
   try {
@@ -88,8 +93,7 @@ export async function uploadImage(base64Image: string): Promise<string | null> {
     const extension = mimeType.split('/')[1];
     const filename = `marker-${Date.now()}-${Math.round(Math.random()*1000)}.${extension}`;
 
-    // Save directly to the server's hard drive volume
-    const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+    const uploadDir = path.join(process.cwd(), 'uploads');
     await fs.mkdir(uploadDir, { recursive: true });
     await fs.writeFile(path.join(uploadDir, filename), buffer);
     
@@ -100,10 +104,10 @@ export async function uploadImage(base64Image: string): Promise<string | null> {
   }
 }
 
+
 async function ensureHostedImage(url: string | null | undefined): Promise<string | null | undefined> {
   if (!url) return url;
   
-  // Download external images and save them to the local server volume
   if (url.startsWith('http') && !url.includes(process.env.NEXT_PUBLIC_SITE_URL || 'localhost')) {
     try {
       const res = await fetch(url);
@@ -115,7 +119,8 @@ async function ensureHostedImage(url: string | null | undefined): Promise<string
       const extension = contentType.split('/')[1] || 'webp';
       const filename = `marker-${Date.now()}-${Math.round(Math.random()*1000)}.${extension}`;
       
-      const uploadDir = path.join(process.cwd(), 'public', 'uploads');
+      // 🚀 FIX: Same here, skip the public folder
+      const uploadDir = path.join(process.cwd(), 'uploads');
       await fs.mkdir(uploadDir, { recursive: true });
       await fs.writeFile(path.join(uploadDir, filename), buffer);
       
