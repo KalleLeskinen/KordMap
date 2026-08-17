@@ -4,9 +4,12 @@ import path from 'path';
 
 export async function GET(
   request: Request,
-  { params }: { params: { filename: string } }
+  // 🚀 FIX: Next.js 15+ requires params to be awaited as a Promise
+  { params }: { params: Promise<{ filename: string }> }
 ) {
-  const filename = params.filename;
+  // 🚀 Await the params before extracting the filename
+  const resolvedParams = await params;
+  const filename = resolvedParams.filename;
   
   // Security: Prevent directory traversal attacks
   if (!filename || filename.includes('/') || filename.includes('..')) {
@@ -14,7 +17,7 @@ export async function GET(
   }
 
   try {
-    // Look in the new dedicated uploads folder (outside of public)
+    // Look in the dedicated uploads folder
     const filePath = path.join(process.cwd(), 'uploads', filename);
     const fileBuffer = await fs.readFile(filePath);
 
@@ -27,8 +30,8 @@ export async function GET(
     return new NextResponse(fileBuffer, {
       headers: {
         'Content-Type': contentType,
-        // Cache the image in the user's browser for 1 month to save bandwidth
-        'Cache-Control': 'public, max-age=2628000, immutable',
+        // Cache the image in the user's browser for 1 year to save bandwidth
+        'Cache-Control': 'public, max-age=31536000, immutable',
       },
     });
   } catch (error) {
