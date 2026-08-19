@@ -1,63 +1,62 @@
-{
-    "Customs": {
-        "map_name": "Customs",
-        "map_url": "https://raw.githubusercontent.com/the-hideout/tarkov-dev-svg-maps/refs/heads/main/Customs.svg",
-        "cover_url": "https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/9/9f/Customs_Banner.png/revision/latest/scale-to-width-down/300?cb=20250317202750"
-    },
-    "Factory": {
-        "map_name": "Factory",
-        "map_url": "https://raw.githubusercontent.com/the-hideout/tarkov-dev-svg-maps/refs/heads/main/Factory.svg",
-        "cover_url": "https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/1/1a/Factory-Day_Banner.png/revision/latest/scale-to-width-down/300?cb=20250317202758"
-    },
-    "GroundZero": {
-        "map_name": "Ground Zero",
-        "map_url": "https://raw.githubusercontent.com/the-hideout/tarkov-dev-svg-maps/refs/heads/main/GroundZero.svg",
-        "cover_url": "https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/4/4d/Ground_Zero_Banner.png/revision/latest/scale-to-width-down/300?cb=20250317202720"
-    },
-    "Interchange": {
-        "map_name": "Interchange",
-        "map_url": "https://raw.githubusercontent.com/the-hideout/tarkov-dev-svg-maps/refs/heads/main/Interchange.svg",
-        "cover_url": "https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/3/3e/Banner_interchange.png/revision/latest/scale-to-width-down/300?cb=20250317202742"
-    },
-    "Labs": {
-        "map_name": "Labs",
-        "map_url": "https://raw.githubusercontent.com/the-hideout/tarkov-dev-svg-maps/refs/heads/main/Labs.svg",
-        "cover_url":"https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/d/d7/TheLabBanner.png/revision/latest/scale-to-width-down/300?cb=20250317202710"
-    },
-    "Shoreline": {
-        "map_name": "Shoreline",
-        "map_url": "https://raw.githubusercontent.com/the-hideout/tarkov-dev-svg-maps/refs/heads/main/Shoreline.svg",
-        "cover_url":"https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/d/d5/Banner_shoreline.png/revision/latest/scale-to-width-down/300?cb=20250317202832"
-    },
-    "StreetsOfTarkov": {
-        "map_name": "Streets of Tarkov",
-        "map_url": "https://raw.githubusercontent.com/the-hideout/tarkov-dev-svg-maps/refs/heads/main/StreetsOfTarkov.svg",
-        "cover_url":"https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/4/41/Banner_streets.png/revision/latest/scale-to-width-down/300?cb=20250317202733"
-    },
-    "Reserve": {
-        "map_name": "Reserve",
-        "map_url": "https://raw.githubusercontent.com/KalleLeskinen/KordMap/refs/heads/New-Maps/kord-map-rw/public/Custom%20Maps/Reserve.svg",
-        "cover_url": "https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/f/f4/Reserve.png/revision/latest/scale-to-width-down/300?cb=20250317202816"
-    },
-    "Woods": {
-        "map_name": "Woods",
-        "map_url": "https://raw.githubusercontent.com/KalleLeskinen/KordMap/refs/heads/New-Maps/kord-map-rw/public/Custom%20Maps/Woods.svg",
-        "cover_url": "https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/3/3e/Banner_woods.png/revision/latest/scale-to-width-down/300?cb=20250317202806"
-    },
-    "Lighthouse": {
-        "map_name": "Lighthouse",
-        "map_url": "https://raw.githubusercontent.com/KalleLeskinen/KordMap/refs/heads/New-Maps/kord-map-rw/public/Custom%20Maps/Lighthouse.svg",  
-        "cover_url": "https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/d/dc/Banner_lighthouse.png/revision/latest/scale-to-width-down/300?cb=20250317202824"
-    },
-    "TheLabyrinth": {
-        "map_name": "The Labyrinth",
-        "map_url": "https://raw.githubusercontent.com/KalleLeskinen/KordMap/refs/heads/New-Maps/kord-map-rw/public/Custom%20Maps/Labyrinth/Labyrinth.svg",
-        "cover_url": "https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/b/b0/The_Labyrinth_Banner.png/revision/latest/scale-to-width-down/300?cb=20250328034450"
-    },
-    "Icebreaker": {
-        "map_name": "Icebreaker",
-        "map_url": "https://raw.githubusercontent.com/KalleLeskinen/KordMap/refs/heads/New-Maps/kord-map-rw/public/Custom%20Maps/Icebreaker/Icebreaker.svg",
-        "cover_url": "https://static.wikia.nocookie.net/escapefromtarkov_gamepedia/images/0/06/Icebreaker_Banner.png/revision/latest/scale-to-width-down/300?cb=20260527030440"
-    }
-
+﻿{
+    "Customs":  {
+                    "map_name":  "Customs",
+                    "map_url":  "/maps/Customs/Customs.svg",
+                    "cover_url":  "/maps/Customs/cover.png"
+                },
+    "Factory":  {
+                    "map_name":  "Factory",
+                    "map_url":  "/maps/Factory/Factory.svg",
+                    "cover_url":  "/maps/Factory/cover.png"
+                },
+    "GroundZero":  {
+                       "map_name":  "Ground Zero",
+                       "map_url":  "/maps/GroundZero/GroundZero.svg",
+                       "cover_url":  "/maps/GroundZero/cover.png"
+                   },
+    "Interchange":  {
+                        "map_name":  "Interchange",
+                        "map_url":  "/maps/Interchange/Interchange.svg",
+                        "cover_url":  "/maps/Interchange/cover.png"
+                    },
+    "Labs":  {
+                 "map_name":  "Labs",
+                 "map_url":  "/maps/Labs/Labs.svg",
+                 "cover_url":  "/maps/Labs/cover.png"
+             },
+    "Shoreline":  {
+                      "map_name":  "Shoreline",
+                      "map_url":  "/maps/Shoreline/Shoreline.svg",
+                      "cover_url":  "/maps/Shoreline/cover.png"
+                  },
+    "StreetsOfTarkov":  {
+                            "map_name":  "Streets of Tarkov",
+                            "map_url":  "/maps/StreetsOfTarkov/StreetsOfTarkov.svg",
+                            "cover_url":  "/maps/StreetsOfTarkov/cover.png"
+                        },
+    "Reserve":  {
+                    "map_name":  "Reserve",
+                    "map_url":  "/maps/Reserve/Reserve.svg",
+                    "cover_url":  "/maps/Reserve/cover.png"
+                },
+    "Woods":  {
+                  "map_name":  "Woods",
+                  "map_url":  "/maps/Woods/Woods.svg",
+                  "cover_url":  "/maps/Woods/cover.png"
+              },
+    "Lighthouse":  {
+                       "map_name":  "Lighthouse",
+                       "map_url":  "/maps/Lighthouse/Lighthouse.svg",
+                       "cover_url":  "/maps/Lighthouse/cover.png"
+                   },
+    "TheLabyrinth":  {
+                         "map_name":  "The Labyrinth",
+                         "map_url":  "/maps/Labyrinth/Labyrinth.svg",
+                         "cover_url":  "/maps/Labyrinth/cover.png"
+                     },
+    "Icebreaker":  {
+                       "map_name":  "Icebreaker",
+                       "map_url":  "/maps/Icebreaker/Icebreaker.svg",
+                       "cover_url":  "/maps/Icebreaker/cover.png"
+                   }
 }
