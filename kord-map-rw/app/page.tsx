@@ -6,7 +6,7 @@ import Sidebar from '@/components/Sidebar';
 import SettingsModal from '@/components/SettingsModal';
 import Lightbox from '@/components/modals/Lightbox';
 import { getMarkers, getPendingMarkers, approveMarker, deleteMarker, getAllApprovedMarkerStats, getAllPendingMarkerStats, verifyEditorPassword } from '@/app/actions/markers';
-import { Map as MapIcon, ListFilter, AlertTriangle } from 'lucide-react';
+import { Map as MapIcon, ListFilter, AlertTriangle, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 const MapWrapper = dynamic(() => import('@/components/MapWrapper'), { ssr: false });
 const MiniMap = dynamic(() => import('@/components/MiniMap'), { ssr: false });
@@ -73,6 +73,7 @@ export default function Home() {
   const [globalPendingStats, setGlobalPendingStats] = useState<{ mapName: string, id: string }[]>([]);
   const [titleFilters, setTitleFilters] = useState<string[]>([]);
   const [selectedMap, setSelectedMap] = useState<{ id: string; displayName: string; url: string } | null>(null);
+  const [isSidebarVisible, setIsSidebarVisible] = useState(true);
 
   const [mode, setMode] = useState<'view' | 'edit'>('view');
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
@@ -355,8 +356,9 @@ export default function Home() {
 
   return (
     <main className="flex h-[100dvh] w-full bg-[#121212] overflow-hidden text-white relative">
-      <ConnectionLinesOverlay hoveredFilter={hoveredFilter} />
-      <Sidebar 
+      <ConnectionLinesOverlay hoveredFilter={isSidebarVisible ? hoveredFilter : null} />
+      <div className={isSidebarVisible ? 'flex shrink-0' : 'hidden'}>
+        <Sidebar
         mapName={selectedMap.displayName} onClearMap={() => setSelectedMap(null)}
         mode={mode} setMode={setMode} floors={floors} currentFloorId={currentFloorId} setCurrentFloorId={setCurrentFloorId}
         openSettings={() => setIsSettingsOpen(true)} openLogin={() => setIsLoginOpen(true)} 
@@ -364,8 +366,20 @@ export default function Home() {
         onLogout={handleLogout} isLoggedIn={!!editorPassword}
         markerTypes={markerTypes} activeFilters={activeFilters} setActiveFilters={setActiveFilters}
         setHoveredFilter={setHoveredFilter} hoveredFilter={hoveredFilter} markers={markers}
-      />
-      <div className="flex-1 relative">
+        />
+      </div>
+      <div className="flex-1 min-w-0 relative">
+        <button
+          type="button"
+          onClick={() => { setHoveredFilter(null); setIsSidebarVisible(visible => !visible); }}
+          aria-label={isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+          aria-controls="kord-sidebar"
+          aria-expanded={isSidebarVisible}
+          title={isSidebarVisible ? 'Hide sidebar' : 'Show sidebar'}
+          className="absolute top-4 left-4 z-[1001] flex items-center justify-center w-9 h-9 rounded-lg border border-[#444] bg-[#1a1a1a] text-gray-300 shadow-xl hover:bg-[#333] hover:text-white focus-visible:outline-2 focus-visible:outline-[#e68c3a]"
+        >
+          {isSidebarVisible ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
+        </button>
         <MapWrapper 
           mapName={selectedMap.id} mapUrl={selectedMap.url}
           mode={mode} settings={settings} currentFloorId={currentFloorId} setCurrentFloorId={setCurrentFloorId}

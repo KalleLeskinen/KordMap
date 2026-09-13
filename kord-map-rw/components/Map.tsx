@@ -166,6 +166,18 @@ function MapSettingsController({ settings }: { settings: MapSettings }) {
   return null;
 }
 
+function MapResizeController() {
+  const map = useMap();
+
+  useEffect(() => {
+    const observer = new ResizeObserver(() => map.invalidateSize({ pan: false }));
+    observer.observe(map.getContainer());
+    return () => observer.disconnect();
+  }, [map]);
+
+  return null;
+}
+
 function FlyToController({ flyToMarker, setFlyToMarker }: any) {
   const map = useMap();
   useEffect(() => {
@@ -460,6 +472,7 @@ export default function Map({
   return (
     <div className="relative w-full h-full">
       <MapContainer crs={L.CRS.Simple} bounds={bounds} maxZoom={3} minZoom={-5} zoomControl={false} style={{ height: '100%', width: '100%', backgroundColor: '#121212' }}>
+        <MapResizeController />
         <MapSettingsController settings={settings} />
         <FlyToController flyToMarker={flyToMarker} setFlyToMarker={setFlyToMarker} />
         <MapCustomControls brightness={brightness} setBrightness={setBrightness} />
